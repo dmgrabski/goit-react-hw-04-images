@@ -1,12 +1,12 @@
 import React from 'react';
 import "./App.css";
-import Searchbar from "./Searchbar";
-import ImageGallery from "./ImageGallery";
-import Loader from "./Loader";
-import ImageGalleryItem from "./ImageGalleryItem";
-import Button from "./Button";
+import Searchbar from "../components/Searchbar/Searchbar";
+import ImageGallery from "../components/ImageGallery/ImageGallery";
+import Loader from "../components/Loader/Loader";
+import ImageGalleryItem from "../components/ImageGalleryItem/ImageGalleryItem";
+import Button from "../components/Button/Button";
 import axios from "axios";
-import Modal from "./Modal";
+import Modal from "../components/Modal/Modal";
 
 class App extends React.Component {
   constructor(props) {

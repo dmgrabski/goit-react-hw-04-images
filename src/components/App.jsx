@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import "./App.css";
 import Searchbar from "../components/Searchbar/Searchbar";
 import ImageGallery from "../components/ImageGallery/ImageGallery";
@@ -8,121 +8,109 @@ import Button from "../components/Button/Button";
 import axios from "axios";
 import Modal from "../components/Modal/Modal";
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      results: [],
-      isLoading: false,
-      isModalOpen: false,
-      selectedImage: null,
-      showLoadMore: false,
-      page: 1,
-      total: 0,
-      lastSearchQuery: ""
+const App = () => {
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showLoadMore, setShowLoadMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [lastSearchQuery, setLastSearchQuery] = useState("");
+  const API_KEY = "40965996-859f4faa7c889b6c9b25dbc7d";
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isModalOpen) {
+        toggleModal();
+      }
     };
-    this.API_KEY = "40965996-859f4faa7c889b6c9b25dbc7d";
-  }
 
-  componentDidMount() {
-    window.addEventListener("keydown", this.handleKeyDown);
-  }
+    window.addEventListener("keydown", handleKeyDown);
 
-  componentWillUnmount() {
-    window.removeEventListener("keydown", this.handleKeyDown);
-  }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isModalOpen]);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.total !== prevState.total || this.state.results !== prevState.results) {
-      this.setState({ showLoadMore: Math.ceil(this.state.total / 12) > 1 });
+  useEffect(() => {
+    if (total !== 0 && (total !== prevTotal || results !== prevResults)) {
+      setShowLoadMore(Math.ceil(total / 12) > 1);
     }
-  }
+  }, [total, results]);
 
-  handleKeyDown = (e) => {
-    if (e.key === "Escape" && this.state.isModalOpen) {
-      this.toggleModal();
-    }
-  };
-
-  fetchData = async (query) => {
+  const fetchData = async (query) => {
     try {
-      this.setState({ isLoading: true });
+      setIsLoading(true);
       const res = await axios.get("https://pixabay.com/api/", {
         params: {
           q: query,
-          page: this.state.page,
-          key: this.API_KEY,
+          page,
+          key: API_KEY,
           image_type: "photo",
           orientation: "horizontal",
           per_page: 12,
         },
       });
-      this.setState({
-        isLoading: false,
-        results: [...res.data.hits, ...this.state.results],
-        total: Math.ceil(res.data.totalHits / res.config.params.per_page)
-      });
+      setIsLoading(false);
+      setResults([...res.data.hits, ...results]);
+      setTotal(Math.ceil(res.data.totalHits / res.config.params.per_page));
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
 
-  handleSubmit = async (query) => {
-    this.setState({ lastSearchQuery: query, results: [] });
-    await this.fetchData(query);
+  const handleSubmit = async (query) => {
+    setLastSearchQuery(query);
+    setResults([]);
+    await fetchData(query);
   };
 
-  toggleModal = (image) => {
-    this.setState({
-      selectedImage: image,
-      isModalOpen: !this.state.isModalOpen
-    });
+  const toggleModal = (image) => {
+    setSelectedImage(image);
+    setIsModalOpen(!isModalOpen);
   };
 
-  handleLoadMore = async () => {
-    await this.fetchData(this.state.lastSearchQuery);
-    this.setState((prevState) => ({ page: prevState.page + 1 }));
+  const handleLoadMore = async () => {
+    await fetchData(lastSearchQuery);
+    setPage((prevPage) => prevPage + 1);
   };
 
-  render() {
-    const { isLoading, results, showLoadMore, isModalOpen, selectedImage } = this.state;
-
-    return (
-      <>
-        <Searchbar onSubmit={this.handleSubmit} />
-        {isLoading ? (
-          <Loader />
-        ) : (
-          <ImageGallery>
-            {results &&
-              results.map((result) => (
-                <ImageGalleryItem
-                  onClick={() => this.toggleModal(result.largeImageURL)}
-                  key={result.id}
-                  src={result.webformatURL}
-                  description={result.description}
-                />
-              ))}
-          </ImageGallery>
-        )}
-        {showLoadMore && (
-          <Button
-            nextPage={this.handleLoadMore}
-            className={"load-more"}
-            type="button"
-            label="Load more"
-          />
-        )}
-        {isModalOpen && (
-          <Modal
-            imageURL={selectedImage}
-            closeModal={this.toggleModal}
-            onClick={this.toggleModal}
-          />
-        )}
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Searchbar onSubmit={handleSubmit} />
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <ImageGallery>
+          {results &&
+            results.map((result) => (
+              <ImageGalleryItem
+                onClick={() => toggleModal(result.largeImageURL)}
+                key={result.id}
+                src={result.webformatURL}
+                description={result.description}
+              />
+            ))}
+        </ImageGallery>
+      )}
+      {showLoadMore && (
+        <Button
+          nextPage={handleLoadMore}
+          className={"load-more"}
+          type="button"
+          label="Load more"
+        />
+      )}
+      {isModalOpen && (
+        <Modal
+          imageURL={selectedImage}
+          closeModal={toggleModal}
+          onClick={toggleModal}
+        />
+      )}
+    </>
+  );
+};
 
 export default App;

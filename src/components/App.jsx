@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "../App.css";
 import Searchbar from "../components/Searchbar/Searchbar";
 import ImageGallery from "../components/ImageGallery/ImageGallery";
@@ -7,6 +7,7 @@ import ImageGalleryItem from "../components/ImageGalleryItem/ImageGalleryItem";
 import Button from "../components/Button/Button";
 import axios from "axios";
 import Modal from "../components/Modal/Modal";
+import styles from "../components/Button/Button.module.css";
 
 function App() {
   const API_KEY = "40965996-859f4faa7c889b6c9b25dbc7d";
@@ -19,6 +20,11 @@ function App() {
   const [total, setTotal] = useState(0);
   const [lastSearchQuery, setLastSearchQuery] = useState("");
 
+  const toggleModal = useCallback((image) => {
+    setSelectedImage(image);
+    setIsModalOpen(!isModalOpen);
+  }, [isModalOpen]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && isModalOpen) toggleModal();
@@ -27,7 +33,7 @@ function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isModalOpen]);
+  }, [isModalOpen, toggleModal]);
 
   useEffect(() => {
     setShowLoadMore(Math.ceil(total / 12) > 1);
@@ -60,15 +66,12 @@ function App() {
     await fetchData(query);
     setPage(1);
   };
-  const toggleModal = (image) => {
-    setSelectedImage(image);
-    setIsModalOpen(!isModalOpen);
-  };
 
   const handleLoadMore = async () => {
     setPage((prevPage) => prevPage + 1);
     fetchData(lastSearchQuery, page + 1);
   };
+
   return (
     <>
       <Searchbar onSubmit={handleSubmit} />
